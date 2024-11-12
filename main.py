@@ -7,6 +7,7 @@ from functions.online_ops import find_my_ip, get_latest_news, get_random_advice,
 from functions.os_ops import open_calculator, open_camera, open_cmd, open_notepad
 from decouple import config
 import serial
+from deep_translator import GoogleTranslator
 
 USERNAME = config('USER')
 BOTNAME = config('BOTNAME')
@@ -26,7 +27,7 @@ listening_text = [
     "Eu!",
     ]
 
-oracle = serial.Serial('COMX', 9600)
+#oracle = serial.Serial('COMX', 9600)
 
 
 def speak(engine, text):
@@ -64,7 +65,7 @@ def take_user_input(engine):
         query = r.recognize_google(audio, language='pt-BR')
         if not 'sair' in query or 'pare' in query:
             speak(engine, choice(opening_text))
-            set_oracle(oracle,2)
+            #set_oracle(oracle,2)
         # else:
             # hour = datetime.now().hour
             # if hour >= 21 and hour < 6:
@@ -76,8 +77,8 @@ def take_user_input(engine):
         query = 'None' 
     return query
 
-def set_oracle(oracle,state):
-    oracle.write(str(state).encode() + b'\n')
+#def set_oracle(oracle,state):
+    #oracle.write(str(state).encode() + b'\n')
 
 def listen(engine):
     """Takes user input, recognizes it using Speech Recognition module and converts it into text"""
@@ -114,6 +115,9 @@ def main():
 
     engine = pyttsx3.init('sapi5')
 
+    #tradutor ingles -> portugues
+    tradutor = GoogleTranslator(source= "en", target= "pt")
+
     # Set Rate
     engine.setProperty('rate', 210)
 
@@ -134,14 +138,14 @@ def main():
     while True:
         query = listen(engine).lower()
         
-        set_oracle(oracle,0)
+        #set_oracle(oracle,0)
 
         if 'faraday' in query or 'faradai' in query or 'faradei' in query:
             speak(engine, choice(listening_text))
 
             while True:
                 
-                set_oracle(oracle,1)
+                #set_oracle(oracle,1)
                 query = take_user_input(engine).lower()       
 
                 if 'abrir bloco de notas' in query:
@@ -241,35 +245,63 @@ def main():
                 elif 'piadoca' in query:
                     speak(engine, f"Espero que goste dessa.")
                     joke = get_random_joke()
-                    speak(engine, joke)
+                    speak(engine, tradutor.translate(joke))
                     speak(engine, "Estou printando na tela.")
+                    print(joke)
+                    break
+                
+                elif 'conte uma piada do pastor' in query:
+                    with open('piadas.txt', 'r', encoding='utf-8') as file:
+                        piadas = file.readlines()
+                    piada = choice(piadas)
+                    speak(engine, "Espero que goste dessa.")
+                    speak(engine, piada)
+                    print(f"Piada: {piada}")
                     break
 
-                elif "conselho" in query:
+                elif "conselho" in query or 'me de um conselho' in query:
                     speak(engine, f"Aqui vai um conselho para você.")
                     advice = get_random_advice()
-                    speak(engine, advice)
+                    conselho = tradutor.translate(advice)
+                    speak(engine, conselho)
                     speak(engine, "Estou printando na tela.")
+                    print(conselho)
                     break
 
-                elif 'notícias' in query:
+                elif 'notícias' in query or 'fale as ultimas notícias' in query:
                     speak(engine, f"Estou lendo as últimas notícias.")
-                    speak(engine, get_latest_news())
+                    news = get_latest_news()
+                    noticia = tradutor.translate(news)
+                    speak(engine, news)
                     speak(engine, "Estou printando na tela.")
-                    print(*get_latest_news(), sep='\n')
+                    print(news, sep='\n')
                     break
 
-                elif 'clima' in query:
-                    ip_address = find_my_ip()
-                    city = requests.get(f"https://ipapi.co/{ip_address}/city/").text
-                    speak(engine, f"Procurando o relatório do tempo de {city}.")
+                #elif 'clima' in query or 'como está o clima' in query:
+                #    ip_address = find_my_ip()
+                #    city = requests.get(f"https://ipapi.co/{ip_address}/city/").text
+                #    speak(engine, f"Procurando o relatório do tempo de {city}.")
+                #    weather, temperature, feels_like = get_weather_report(city)
+                #    speak(engine,
+                #        f"A temperatura atual é {temperature}, com a sensação térmica de {feels_like}")
+                #    speak(engine, f"Também, é falado no relatório que {weather}")
+                #    speak(engine, "Estou printando na tela.")
+                #    print(
+                #        f"Descrição: {weather}\n Temperatura: {temperature}\n Sensação: {feels_like}")
+                #    break
+
+                elif 'clima' in query or 'como está o clima' in query:
+                    city = "Vitória"
+                    
+                    speak(engine, f"Procurando o relatório do tempo para {city}.")
+                    
                     weather, temperature, feels_like = get_weather_report(city)
-                    speak(engine,
-                        f"A temperatura atual é {temperature}, com a sensação térmica de {feels_like}")
-                    speak(engine, f"Também, é falado no relatório que {weather}")
+                    
+                    speak(engine, f"A temperatura atual é {temperature}, com sensação térmica de {feels_like}.")
+                    speak(engine, f"No relatório do clima, consta que {tradutor.translate(weather)}.")
                     speak(engine, "Estou printando na tela.")
-                    print(
-                        f"Descrição: {weather}\n Temperatura: {temperature}\n Sensação: {feels_like}")
+                    
+                    print(f"Descrição: {weather}\nTemperatura: {temperature}°\nSensação: {feels_like}°")
                     break
 
                 elif 'sorteio' in query:
@@ -291,7 +323,7 @@ def main():
                                 speak("Desculpe, não consegui entender os números. Certifique-se de que você forneceu números válidos.")
                         
                         else:
-                            set_oracle(oracle,3)
+                            #set_oracle(oracle,3)
                             speak("Desculpe, não consegui entender os números. Certifique-se de que você forneceu números válidos.")
                     break
 
